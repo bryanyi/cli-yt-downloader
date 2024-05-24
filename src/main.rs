@@ -34,9 +34,9 @@ fn sanitize_filename(filename: &str) -> String {
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
     let video_url = cli.url;
-    // let output_dir = expand_tilde(cli.output_dir.unwrap_or_else(|| ".".to_string()))?;
 
-    // Determine the default output directory based on the OS
+    // Determine the default "Downloads" output directory based on the OS, otherwise just download
+    // to current directory
     let default_output_dir = UserDirs::new()
         .and_then(|user_dirs| user_dirs.download_dir().map(PathBuf::from))
         .unwrap_or_else(|| PathBuf::from("."));
@@ -58,7 +58,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let video: Video = Video::from_id(id.into_owned()).await?;
     let video_title = sanitize_filename(&video.video_details().title);
-    let audio_streams = video.audio_streams();
 
     let best_stream: &Stream = if cli.audio_only {
         video.best_audio().unwrap()
