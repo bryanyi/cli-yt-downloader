@@ -1,9 +1,18 @@
+mod video_utils;
+
 use clap::ArgAction::SetTrue;
 use clap::Parser;
 use directories::UserDirs;
-use rustube::{url::Url, Id, Stream, Video};
-use std::{error::Error, path::PathBuf};
+use indicatif::{ProgressBar, ProgressStyle};
+use rustube::{url::Url, Callback, Id, Stream, Video};
+use std::{
+    error::Error,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 use tokio::fs::create_dir_all;
+
+use video_utils::general_utils::{expand_tilde, sanitize_filename};
 
 #[derive(Parser)]
 struct Cli {
@@ -12,22 +21,6 @@ struct Cli {
     output_dir: Option<String>,
     #[arg(long, short = 'a', action = SetTrue, default_value_t = false)]
     audio_only: bool,
-}
-
-// Function to expand the tilde to the home directory path
-fn expand_tilde(path: String) -> Result<PathBuf, Box<dyn Error>> {
-    if path.starts_with("~/") {
-        if let Some(home_dir) = home::home_dir() {
-            return Ok(home_dir.join(path.trim_start_matches("~/")));
-        } else {
-            return Err("Failed to retrieve home directory".into());
-        }
-    }
-    Ok(PathBuf::from(path))
-}
-
-fn sanitize_filename(filename: &str) -> String {
-    filename.replace(|c: char| !c.is_ascii_alphanumeric() && c != '.', "")
 }
 
 #[tokio::main]
@@ -73,19 +66,45 @@ async fn main() -> Result<(), Box<dyn Error>> {
         create_dir_all(parent).await?;
     }
 
-    println!("Downloading to {:?}", output_path);
+    let stream_content_length = best_stream.content_length().await?;
+    println!("steam content length: {}", stream_content_length);
 
-    // let final_file = best_stream.download_to_dir(&output_path).await;
+    let progress_bar = ProgressBar::new(stream_content_length);
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .progress_chars("#>-"),
+    );
 
-    match best_stream.download_to(&output_path).await {
-        Ok(final_file) => println!("Downloaded video to {:?}, {:?}", output_path, final_file),
+    let progress_bar = Arc::new(Mutex::new(progress_bar));
+
+    let callback = Callback::new().connect_on_progress_closure({
+        let progress_bar = Arc::clone(&progress_bar);
+
+        move |callback_args| {
+            let cur_chunk = callback_args.current_chunk;
+            let progress_bar = progress_bar.lock().unwrap();
+            progress_bar.set_position(cur_chunk as u64);
+        }
+    });
+
+    let final_file = best_stream
+        .download_to_with_callback(&output_path, callback)
+        .await;
+
+    match final_file {
+        Ok(_) => {
+            progress_bar
+                .lock()
+                .unwrap()
+                .finish_with_message("Download complete!");
+            println!("Downloaded video to {:?}", output_path);
+        }
         Err(e) => {
-            eprintln!("Download failed! Error message: {}", e);
+            eprintln!("Download failed =( Error message: {}", e);
             return Ok(());
         }
     }
-
-    println!("Download complete!");
 
     Ok(())
 }
