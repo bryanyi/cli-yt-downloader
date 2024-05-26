@@ -10,7 +10,6 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-use tokio::fs::create_dir_all;
 
 use video_utils::general_utils::{expand_tilde, sanitize_filename};
 
@@ -53,9 +52,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let video_title = sanitize_filename(&video.video_details().title);
 
     let best_stream: &Stream = if cli.audio_only {
-        video.best_audio().unwrap()
+        match video.best_audio() {
+            Some(stream) => {
+                println!("downloading audio...");
+                stream
+            }
+            None => {
+                println!("best audio stream download failed...please retry!");
+                return Ok(());
+            }
+        }
     } else {
-        video.best_quality().unwrap()
+        match video.best_video() {
+            Some(stream) => {
+                println!("downloading video...");
+                stream
+            }
+            None => {
+                println!("best video stream download failed...please retry!");
+                return Ok(());
+            }
+        }
     };
 
     let file_extension = if cli.audio_only { "mp3" } else { "mp4" };
@@ -63,7 +80,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let output_path = output_dir.join(format!("{}.{}", video_title, file_extension));
 
     if let Some(parent) = output_path.parent() {
-        create_dir_all(parent).await?;
+        if let Err(err) = tokio::fs::create_dir_all(parent).await {
+            eprintln!("Failed to create output directory: {}", err);
+            return Ok(());
+        };
     }
 
     let stream_content_length = best_stream.content_length().await?;
@@ -87,6 +107,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
+    // todo: final audio file does not play
     let final_file = best_stream
         .download_to_with_callback(&output_path, callback)
         .await;
