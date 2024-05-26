@@ -67,13 +67,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let stream_content_length = best_stream.content_length().await?;
-    println!("steam content length: {}", stream_content_length);
 
     let progress_bar = ProgressBar::new(stream_content_length);
     progress_bar.set_style(
         ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-            .progress_chars("#>-"),
+            .template("[{elapsed}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .progress_chars("##-"),
     );
 
     let progress_bar = Arc::new(Mutex::new(progress_bar));
