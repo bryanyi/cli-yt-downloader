@@ -1,29 +1,42 @@
 use std::error::Error;
 use std::path::Path;
-use std::process::{exit, Command};
+use std::process::{Command, Stdio};
 
-pub fn extract_audio(input_video: &Path, output_audio: &Path) -> Result<(), Box<dyn Error>> {
-    println!("extracting audio...");
+pub fn convert_to_mp3<P: AsRef<Path>>(video_path: P) -> Result<(), Box<dyn Error>> {
+    let video_path = video_path.as_ref();
+    let mp3_path = video_path.with_extension("mp3");
+
     // Check if ffmpeg is installed
-    if Command::new("ffmpeg").arg("-version").output().is_err() {
-        eprintln!("ffmpeg is not installed on this system. Please install ffmpeg from https://ffmpeg.org/download.html");
-        exit(1);
-    }
+    let ffmpeg_check = Command::new("ffmpeg")
+        .arg("-version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
 
-    // Run the ffmpeg command to extract audio
-    let status = Command::new("ffmpeg")
-        .arg("-i")
-        .arg(input_video)
-        .arg("-q:a")
-        .arg("0")
-        .arg("-map")
-        .arg("a")
-        .arg(output_audio)
-        .status()?;
+    println!("ffmpeg status: {:?}", ffmpeg_check);
 
-    if status.success() {
-        Ok(())
-    } else {
-        Err("Failed to extract audio with ffmpeg".into())
+    match ffmpeg_check {
+        Ok(status) if status.success() => {
+            // ffmpeg is installed, proceed with conversion
+            let status = Command::new("ffmpeg")
+                .arg("-i")
+                .arg(video_path.as_os_str())
+                .arg("-vn") // No video
+                .arg("-acodec")
+                .arg("mp3")
+                .arg(mp3_path.as_os_str())
+                .status()?;
+
+            if !status.success() {
+                return Err("Failed to convert video to MP3".into());
+            }
+
+            Ok(())
+        }
+        _ => {
+            // ffmpeg is not installed
+            println!("ffmpeg is not installed on your system. Please download it from https://ffmpeg.org/download.html");
+            Err("ffmpeg is not installed".into())
+        }
     }
 }
