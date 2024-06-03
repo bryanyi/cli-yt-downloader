@@ -52,24 +52,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let video_title = sanitize_filename(&video.video_details().title);
 
     let best_stream: &Stream = if cli.audio_only {
-        match video.best_audio() {
+        let best_audio_quality = video
+            .streams()
+            .iter()
+            .filter(|stream| {
+                stream.includes_audio_track
+                    // && !stream.includes_video_track
+                    && stream.mime == "audio/mp4"
+            })
+            .max_by_key(|stream| stream.bitrate);
+
+        match best_audio_quality {
             Some(stream) => {
-                println!("downloading audio...");
+                println!("audio stream: {:?}", stream);
                 stream
             }
             None => {
-                println!("best audio stream download failed...please retry!");
+                println!(
+                    "audio download stream failed...please retry the same command one more time!"
+                );
                 return Ok(());
             }
         }
     } else {
-        match video.best_video() {
-            Some(stream) => {
-                println!("downloading video...");
-                stream
-            }
+        let best_video = video
+            .streams()
+            .iter()
+            .filter(|stream| stream.includes_video_track && stream.includes_audio_track)
+            .max_by_key(|stream| stream.quality_label);
+
+        match best_video {
+            Some(stream) => stream,
             None => {
-                println!("best video stream download failed...please retry!");
+                println!(
+                    "video download stream failed...please retry the same command one more time!"
+                );
                 return Ok(());
             }
         }
@@ -91,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let progress_bar = ProgressBar::new(stream_content_length);
     progress_bar.set_style(
         ProgressStyle::default_bar()
-            .template("[{elapsed}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .template("[{bar:25.cyan/blue}] [{bytes}/{total_bytes}] [ETA: {eta}]")
             .progress_chars("##-"),
     );
 
