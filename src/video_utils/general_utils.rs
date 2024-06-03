@@ -39,14 +39,14 @@ fn is_youtube_playlist(link: &str) -> bool {
 }
 
 pub fn is_valid_link(link: &str) -> bool {
-    if !is_valid_youtube_video_link(&link) {
+    if !is_valid_youtube_video_link(link) {
         println!("#####################################");
         println!("Is not a valid youtube link or is a YouTube playlist link - please enter a valid URL to a single YouTube video.");
         println!("#####################################");
         return false;
     }
 
-    if is_youtube_playlist(&link) {
+    if is_youtube_playlist(link) {
         println!("#####################################");
         println!(
             "Youtube playlists are not supported at this time :( please enter a single video's url"
