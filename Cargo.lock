@@ -229,10 +229,12 @@ dependencies = [
  "directories",
  "home",
  "indicatif",
+ "regex",
  "rustube",
  "serde",
  "serde_json",
  "tokio",
+ "url",
 ]
 
 [[package]]

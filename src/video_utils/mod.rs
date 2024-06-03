@@ -1,2 +1,2 @@
-pub mod ffmpeg;
+pub mod downloader;
 pub mod general_utils;
