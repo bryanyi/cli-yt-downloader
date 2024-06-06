@@ -8,6 +8,9 @@ readme = "README.md"
 license = "MIT"
 keywords = ["cli, youtube"]
 categories = ["command-line-utilities"]
+homepage = "https://github.com/bryanyi/cli-yt-downloader"
+repository = "https://github.com/bryanyi/cli-yt-downloader"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
