@@ -9,6 +9,9 @@ use video_utils::downloader::download;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    download(cli).await?;
+    match download(cli).await {
+        Ok(_res) => println!("downloading"),
+        Err(_e) => println!("something went wrong...please run the same command again!"),
+    }
     Ok(())
 }

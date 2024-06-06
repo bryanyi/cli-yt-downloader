@@ -124,8 +124,8 @@ pub async fn download(cli: Cli) -> Result<(), Box<dyn Error>> {
                 .finish_with_message("Download complete!");
             println!("Downloaded video to {:?}", output_path);
         }
-        Err(e) => {
-            eprintln!("Download failed =( Error message: {}", e);
+        Err(_e) => {
+            eprintln!("Download failed. Please retry the same command one more time!");
             return Ok(());
         }
     }
