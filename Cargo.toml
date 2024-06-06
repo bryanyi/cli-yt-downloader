@@ -1,7 +1,13 @@
 [package]
-name = "cli_yt_downloader"
+name = "cli-yt-downloader"
 version = "0.1.0"
+authors = ["Bryan Yi"]
 edition = "2021"
+description = "A simple to use Cli for downloading YouTube videos"
+readme = "README.md"
+license = "MIT"
+keywords = ["cli, youtube"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,5 +20,4 @@ tokio = {version = "1.11.0", features = ["full"] }
 indicatif = "0.16"
 home = "0.5.9"
 directories = "5.0.1"
-regex = "1.10.4"
 url = "2.5.0"
