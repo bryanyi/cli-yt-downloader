@@ -5,7 +5,7 @@ A simple YouTube downloader powered by [rustube](https://crates.io/crates/rustub
 ## Installation
 
 ```
-https://crates.io/crates/cli-yt-downloader
+cargo install cli-yt-downloader
 ```
 
 ## Optional - Create alias to be 'yt'
