@@ -1,14 +1,8 @@
 use directories::UserDirs;
-use indicatif::{ProgressBar, ProgressStyle};
-use rustube::{url::Url, Callback, Id, Stream, Video};
-use std::{
-    error::Error,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
-
+use std::{error::Error, path::PathBuf};
 use crate::clap_cli::clap::Cli;
 use crate::video_utils::general_utils::{expand_tilde, is_valid_link, sanitize_filename};
+use crate::video_utils::yt_downloader::YoutubeDL;
 
 pub async fn download(cli: Cli) -> Result<(), Box<dyn Error>> {
     let video_url = cli.url;
@@ -28,107 +22,26 @@ pub async fn download(cli: Cli) -> Result<(), Box<dyn Error>> {
             .unwrap_or_else(|| default_output_dir.to_string_lossy().to_string()),
     )?;
 
-    let url = Url::parse(&video_url)?;
-    //let id = Id::from_str(&video_url)?;
-    let id = match Id::from_raw(url.as_str()) {
-        Ok(id) => id,
-        Err(err) => {
-            eprintln!("Failed to parse video ID from URL: {}", err);
-            return Ok(());
-        }
-    };
+    // Create YouTube downloader instance
+    let mut yt = YoutubeDL::new();
 
-    let video: Video = Video::from_id(id.into_owned()).await?;
-    let video_title = sanitize_filename(&video.video_details().title);
-
-    let best_stream: &Stream = if cli.audio_only {
-        let best_audio_quality = video
-            .streams()
-            .iter()
-            .filter(|stream| {
-                stream.includes_audio_track
-                    // && !stream.includes_video_track
-                    && stream.mime == "audio/mp4"
-            })
-            .max_by_key(|stream| stream.bitrate);
-
-        match best_audio_quality {
-            Some(stream) => stream,
-            None => {
-                println!(
-                    "audio download stream failed...please retry the same command one more time!"
-                );
-                return Ok(());
-            }
-        }
-    } else {
-        let best_video = video
-            .streams()
-            .iter()
-            .filter(|stream| stream.includes_video_track && stream.includes_audio_track)
-            .max_by_key(|stream| stream.quality_label);
-
-        match best_video {
-            Some(stream) => stream,
-            None => {
-                println!(
-                    "video download stream failed...please retry the same command one more time!"
-                );
-                return Ok(());
-            }
-        }
-    };
-
+    // Get video info first
+    let video_info = yt.get_video_info(&video_url).await?;
+    let video_title = sanitize_filename(&video_info.title);
+    
     let file_extension = if cli.audio_only { "mp3" } else { "mp4" };
-
     let output_path = output_dir.join(format!("{}.{}", video_title, file_extension));
 
     if let Some(parent) = output_path.parent() {
         if let Err(err) = tokio::fs::create_dir_all(parent).await {
             eprintln!("Failed to create output directory: {}", err);
-            return Ok(());
-        };
-    }
-
-    let stream_content_length = best_stream.content_length().await?;
-
-    let progress_bar = ProgressBar::new(stream_content_length);
-    progress_bar.set_style(
-        ProgressStyle::default_bar()
-            .template("[{bar:25.cyan/blue}] [{bytes}/{total_bytes}] [ETA: {eta}]")
-            .progress_chars("##-"),
-    );
-
-    let progress_bar = Arc::new(Mutex::new(progress_bar));
-
-    let callback = Callback::new().connect_on_progress_closure({
-        let progress_bar = Arc::clone(&progress_bar);
-
-        move |callback_args| {
-            let cur_chunk = callback_args.current_chunk;
-            let progress_bar = progress_bar.lock().unwrap();
-            progress_bar.set_position(cur_chunk as u64);
-        }
-    });
-
-    // todo: final audio file does not play
-    let final_file = best_stream
-        .download_to_with_callback(&output_path, callback)
-        .await;
-
-    match final_file {
-        Ok(_) => {
-            progress_bar
-                .lock()
-                .unwrap()
-                .finish_with_message("Download complete!");
-            println!("Downloaded video to {:?}", output_path);
-        }
-        Err(_e) => {
-            eprintln!("Download failed. Please retry the same command one more time!");
-            return Ok(());
+            return Err(err.into());
         }
     }
+
+    // Download the video
+    yt.download_video(&video_url, &output_path, cli.audio_only).await?;
+    println!("Downloaded to {:?}", output_path);
 
     Ok(())
 }
