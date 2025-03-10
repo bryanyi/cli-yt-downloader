@@ -1,6 +1,6 @@
 # Cli YouTube Downloader
 
-A simple YouTube downloader powered by [rustube](https://crates.io/crates/rustube) and [clap](https://crates.io/crates/clap)
+A simple YouTube downloader powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [clap](https://crates.io/crates/clap)
 
 [![Crates.io](https://img.shields.io/crates/v/cli-yt-downloader)](https://crates.io/crates/cli-yt-downloader)
 

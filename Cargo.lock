@@ -223,7 +223,7 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 
 [[package]]
 name = "cli-yt-downloader"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "clap",
  "directories",
