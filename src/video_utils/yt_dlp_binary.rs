@@ -30,7 +30,7 @@ pub async fn run_yt_dlp(args: &[&str], progress_callback: Option<Arc<Mutex<Box<d
             .arg("--newline")     // Ensure each progress update is on a new line
             .arg("--no-colors")   // Disable colors in the output
             .arg("--progress-template")
-            .arg("[download] %(progress._percent_str)s");
+            .arg("[download] %(progress.downloaded_bytes)s/%(progress.total_bytes)s");
     }
 
     // Add user arguments

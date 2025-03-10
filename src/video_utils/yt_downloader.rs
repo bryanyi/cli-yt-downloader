@@ -106,7 +106,7 @@ impl YoutubeDL {
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {percent}% ({eta})")
                 .unwrap_or_else(|_| ProgressStyle::default_bar())
-                .progress_chars("█>-")
+                .progress_chars("##-")
         );
         progress_bar.enable_steady_tick(Duration::from_millis(100));
         

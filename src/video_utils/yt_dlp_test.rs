@@ -2,20 +2,17 @@ use std::{
     error::Error,
     path::PathBuf,
 };
-use tokio;
 
 use crate::video_utils::yt_dlp_binary;
 
-pub async fn test_download() -> Result<(), Box<dyn Error>> {
+#[tokio::test]
+async fn test_download() -> Result<(), Box<dyn Error>> {
     // Set up fixed test parameters
     let url = "https://www.youtube.com/watch?v=xRBAsdx9Ve0";
     let output_path = PathBuf::from("test_download.mp4");
 
     // Set up download arguments
     let args = vec![
-        "-f", "bv+ba/b",  // Best video + best audio, or best combined format as fallback
-        "-S", "vcodec:h264,res,acodec:m4a",  // Sort formats to prefer h264 video and m4a audio
-        "--merge-output-format", "mp4",
         "-o", output_path.to_str().unwrap(),
         url
     ];
