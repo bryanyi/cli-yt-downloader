@@ -1,6 +1,6 @@
 [package]
 name = "cli-yt-downloader"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Bryan Yi"]
 edition = "2021"
 description = "A simple to use Cli for downloading YouTube videos"
